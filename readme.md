@@ -43,11 +43,6 @@ postgres=# select pg_backend_pid();
     - WAL buffer - лог транзакций;
     - commit log (clog) - кэш состояние транзакций.
 
-По умолчанию в кластере PostgreSQL создаются БД:
-    - template0
-    - template1
-    - postgres
-
 postgres=# select oid, datname from pg_database order by oid;
   oid  |  datname
 -------+-----------
@@ -118,3 +113,49 @@ View pg_file_settings:
 Нагрузочное тестирование:
 https://github.com/Percona-Lab/sysbench-tpcc (требует установки https://github.com/akopytov/sysbench)
 pgbench
+
+"relation" (отношение) используется для обозначения объектов, таких как таблицы, индексы, представления и секвенции.
+Типы relation:
+r = ordinary table,
+i = index,
+S = sequence,
+v = view,
+m = materialized view,
+c = composite type,
+t = TOAST table,
+f = foreign table
+
+### База данных (Database)
+По умолчанию в кластере PostgreSQL создаются БД:
+    - template0 (для восстановления из резервной копии, по умолчанию даже нет прав на connect)
+    - template1 (используется как шаблон для создания БД, в нем имеет смысл делать некие действия, которые не хочется делать каждый раз при создании новых БД)
+    - postgres (первая БД для регулярной работы, создается по умолчанию, хорошая практика - так же не использовать)
+
+https://www.postgresql.org/docs/current/sql-createdatabase.html
+CREATE DATABASE name
+    [ WITH ] [ OWNER [=] user_name ]
+           [ TEMPLATE [=] template ]
+           [ ENCODING [=] encoding ]
+           [ STRATEGY [=] strategy ]
+           [ LOCALE [=] locale ]
+           [ LC_COLLATE [=] lc_collate ]
+           [ LC_CTYPE [=] lc_ctype ]
+           [ ICU_LOCALE [=] icu_locale ]
+           [ ICU_RULES [=] icu_rules ]
+           [ LOCALE_PROVIDER [=] locale_provider ]
+           [ COLLATION_VERSION = collation_version ]
+           [ TABLESPACE [=] tablespace_name ]
+           [ ALLOW_CONNECTIONS [=] allowconn ]
+           [ CONNECTION LIMIT [=] connlimit ]
+           [ IS_TEMPLATE [=] istemplate ]
+           [ OID [=] oid ]
+
+psql -d <database>  # подключение к определенной БД
+# \l  # список БД
+# \c  # к какой базе данных и под каким пользователем подключена текущая сессия
+# \c <database>  # подключиться к другой БД
+
+select oid, datname, datistemplate, datallowconn
+from pg_database;
+
+### Схема (Schema)
