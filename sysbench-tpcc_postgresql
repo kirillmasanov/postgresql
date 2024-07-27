@@ -1,0 +1,28 @@
+### Testing PestgreSQL with sysbench-tpcc
+
+sudo apt install sysbench
+git clone https://github.com/Percona-Lab/sysbench-tpcc.git
+cd sysbench-tpcc
+
+sudo -u postgres psql
+
+CREATE DATABASE sbtest;
+CREATE USER sbtest WITH PASSWORD 'password';
+GRANT ALL PRIVILEGES ON DATABASE sbtest TO sbtest;
+\q
+
+Настройка pg_hba.conf:
+Разрешение подключений для пользователя sbtest
+Тип   База данных   Пользователь   Адрес            Метод аутентификации
+host    all           sbtest          0.0.0.0/0        md5
+
+sudo systemctl restart postgresql
+
+Инициализация схемы и данных TPCC:
+./tpcc.lua --pgsql-user=sbtest --pgsql-password=password --pgsql-db=sbtest --threads=1 --tables=10 --scale=10 --db-driver=pgsql prepare
+
+Запуск теста:
+./tpcc.lua --pgsql-user=sbtest --pgsql-password=password --pgsql-db=sbtest --threads=10 --tables=10 --scale=10 --db-driver=pgsql run
+
+Очистка базы данных после тестирования:
+./tpcc.lua --pgsql-user=sbtest --pgsql-password=password --pgsql-db=sbtest --threads=1 --tables=10 --scale=10 --db-driver=pgsql cleanup
