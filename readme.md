@@ -14,6 +14,7 @@ psql [OPTION]... [DBNAME [USERNAME]]
 \echo :AUTOCOMMIT
 \conninfo - information about the current database connection
 \password - сброс пароля
+\d - (describe) выводит список всех объектов базы данных
 
 select version();
 
@@ -159,3 +160,65 @@ select oid, datname, datistemplate, datallowconn
 from pg_database;
 
 ### Схема (Schema)
+Иногда называется namespace
+По умолчанию в каждой базе данных есть схемы:
+    - pg_catalog
+    - information_schema
+    - public
+    - pg_temp_<n>
+
+Полное имя объекта: <schema>.<object>
+Текущая схема: select current_schema();
+Строка поиска определяется параметром search_path. pg_catalog всегда неявно первый.
+
+\dn - список схем
+
+CREATE SCHEMA schema_name [ AUTHORIZATION role_specification ] [ schema_element [ ... ] ]
+CREATE SCHEMA AUTHORIZATION role_specification [ schema_element [ ... ] ]
+CREATE SCHEMA IF NOT EXISTS schema_name [ AUTHORIZATION role_specification ]
+CREATE SCHEMA IF NOT EXISTS AUTHORIZATION role_specification
+
+where role_specification can be:
+    user_name
+  | CURRENT_ROLE
+  | CURRENT_USER
+  | SESSION_USER
+
+select * from pg_namespace;
+
+### Пользователь (User)
+
+\h create user
+\d pg_user
+select * from pg_user;
+
+CREATE USER name [ [ WITH ] option [ ... ] ]
+
+where option can be:
+
+      SUPERUSER | NOSUPERUSER
+    | CREATEDB | NOCREATEDB
+    | CREATEROLE | NOCREATEROLE
+    | INHERIT | NOINHERIT
+    | LOGIN | NOLOGIN
+    | REPLICATION | NOREPLICATION
+    | BYPASSRLS | NOBYPASSRLS
+    | CONNECTION LIMIT connlimit
+    | [ ENCRYPTED ] PASSWORD 'password' | PASSWORD NULL
+    | VALID UNTIL 'timestamp'
+    | IN ROLE role_name [, ...]
+    | IN GROUP role_name [, ...]
+    | ROLE role_name [, ...]
+    | ADMIN role_name [, ...]
+    | USER role_name [, ...]
+    | SYSID uid
+
+URL: https://www.postgresql.org/docs/14/sql-createuser.html
+
+
+### Права (Privileges)
+
+grant/revoke на объект:
+    - relation [attribute, …]
+    - schema
+    - database
