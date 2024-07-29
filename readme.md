@@ -1,70 +1,85 @@
-https://severalnines.com/blog/understanding-postgresql-architecture/
-https://www.interdb.jp/pg/
-https://habr.com/ru/companies/postgrespro/articles/458186/
-https://habr.com/ru/companies/postgrespro/articles/459250/
-https://habr.com/ru/companies/postgrespro/articles/460423/
-https://habr.com/ru/companies/postgrespro/articles/461523/
+
+Learning PostgreSQL
+===================
+
+[Severalnines: Understanding the PostgreSQL](https://severalnines.com/blog/understanding-postgresql-architecture/)
+[The Internals of PostgreSQL](https://www.interdb.jp/pg/)
+[WAL в PostgreSQL: 1. Буферный кеш](https://habr.com/ru/companies/postgrespro/articles/458186/)
+[WAL в PostgreSQL: 2. Журнал предзаписи](https://habr.com/ru/companies/postgrespro/articles/459250/)
+[WAL в PostgreSQL: 3. Контрольная точка](https://habr.com/ru/companies/postgrespro/articles/460423/)
+[WAL в PostgreSQL: 4. Настройка журнала](https://habr.com/ru/companies/postgrespro/articles/461523/)
 https://pgtune.leopard.in.ua/
 
 su - postgres
+```sql
 psql [OPTION]... [DBNAME [USERNAME]]
     psql -h <hostname> -p 5432 -d <dbname> -U <username> -W
-
+```
+```sql
 \set AUTOCOMMIT off
 \echo :AUTOCOMMIT
 \conninfo - information about the current database connection
 \password - сброс пароля
 \d - (describe) выводит список всех объектов базы данных
-
+```
+```sql
 select version();
-
+```
+```sql
 show transaction_isolation;
 set transaction_isolation TO <level>
 DEFAULT | "read committed" | "read uncommitted" | "repeatable read" | serializable
-
+```
+```shell
 netstat -a | grep postgres
 netstat -na | grep 5432
-
-pg_lsclusters - show information about all PostgreSQL clusters
-pg_ctlcluster - start/stop/restart/reload a PostgreSQL cluster
+```
+```shell
+pg_lsclusters  # show information about all PostgreSQL clusters
+```
+```shell
+pg_ctlcluster  # start/stop/restart/reload a PostgreSQL cluster
     pg_ctlcluster [options] <cluster-version> <cluster-name action>
     where action = start|stop|restart|reload|promote
-pg_dropcluster - completely delete a PostgreSQL cluster
+pg_dropcluster  # completely delete a PostgreSQL cluster
     pg_dropcluster [--stop] <cluster-version> <cluster-name>
-pg_createcluster - create a new PostgreSQL cluster
+pg_createcluster  # create a new PostgreSQL cluster
     pg_createcluster [options] <version> <name> [-- initdb options]
-
+```
+```sql
 postgres=# select pg_backend_pid();
  pg_backend_pid
 ----------------
          217802
-
+```
 Разделяемая память - находится в IPC shared memory сегменте:
+
     - buffer pool - хранит страницы таблиц и индексов;
     - WAL buffer - лог транзакций;
     - commit log (clog) - кэш состояние транзакций.
-
+```sql
 postgres=# select oid, datname from pg_database order by oid;
   oid  |  datname
 -------+-----------
      1 | template1
  13760 | template0
  13761 | postgres
-
+```
 
 Табличные пространства - отдельный каталог с точки зрения файловой системы.
 По умолчанию:
+
     - pg_default - $PGDATA/base
     - pg_global - $PGDATA/global
 Новые табличные пространства создаются в:
     - $PGDATA/tblspc
-
+```sql
 postgres=# select * from pg_tablespace;
  oid  |  spcname   | spcowner | spcacl | spcoptions
 ------+------------+----------+--------+------------
  1663 | pg_default |       10 |        |
  1664 | pg_global  |       10 |        |
-
+```
 Настройка удаленного соединения:
     - postgresql.conf:
         listen_addresses = 'localhost' > '*'
@@ -126,13 +141,14 @@ c = composite type,
 t = TOAST table,
 f = foreign table
 
-### База данных (Database)
+## База данных (Database)
 По умолчанию в кластере PostgreSQL создаются БД:
     - template0 (для восстановления из резервной копии, по умолчанию даже нет прав на connect)
     - template1 (используется как шаблон для создания БД, в нем имеет смысл делать некие действия, которые не хочется делать каждый раз при создании новых БД)
     - postgres (первая БД для регулярной работы, создается по умолчанию, хорошая практика - так же не использовать)
 
 https://www.postgresql.org/docs/current/sql-createdatabase.html
+```sql
 CREATE DATABASE name
     [ WITH ] [ OWNER [=] user_name ]
            [ TEMPLATE [=] template ]
@@ -150,16 +166,16 @@ CREATE DATABASE name
            [ CONNECTION LIMIT [=] connlimit ]
            [ IS_TEMPLATE [=] istemplate ]
            [ OID [=] oid ]
-
+```
 psql -d <database>  # подключение к определенной БД
 # \l  # список БД
 # \c  # к какой базе данных и под каким пользователем подключена текущая сессия
 # \c <database>  # подключиться к другой БД
-
+```sql
 select oid, datname, datistemplate, datallowconn
 from pg_database;
-
-### Схема (Schema)
+```
+## Схема (Schema)
 Иногда называется namespace
 По умолчанию в каждой базе данных есть схемы:
     - pg_catalog
@@ -172,7 +188,7 @@ from pg_database;
 Строка поиска определяется параметром search_path. pg_catalog всегда неявно первый.
 
 \dn - список схем
-
+```sql
 CREATE SCHEMA schema_name [ AUTHORIZATION role_specification ] [ schema_element [ ... ] ]
 CREATE SCHEMA AUTHORIZATION role_specification [ schema_element [ ... ] ]
 CREATE SCHEMA IF NOT EXISTS schema_name [ AUTHORIZATION role_specification ]
@@ -183,15 +199,19 @@ where role_specification can be:
   | CURRENT_ROLE
   | CURRENT_USER
   | SESSION_USER
-
+```
+```sql
 select * from pg_namespace;
+```
+## Пользователь (User)
 
-### Пользователь (User)
+`\h  #create user`
 
-\h create user
-\d pg_user
+`\d pg_user`
+```sql
 select * from pg_user;
-
+```
+```sql
 CREATE USER name [ [ WITH ] option [ ... ] ]
 
 where option can be:
@@ -212,11 +232,11 @@ where option can be:
     | ADMIN role_name [, ...]
     | USER role_name [, ...]
     | SYSID uid
-
+```
 URL: https://www.postgresql.org/docs/14/sql-createuser.html
 
 
-### Права (Privileges)
+## Права (Privileges)
 
 grant/revoke на объект:
     - relation [attribute, …]
